@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pelanggan;
+use App\Models\Pesanan;
 use Illuminate\Http\Request;
 
 class PelangganController extends Controller
@@ -14,72 +15,27 @@ class PelangganController extends Controller
      */
     public function index()
     {
-        //
+        return view('pelanggan.cek-status');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+
+    public function cek(Request $request)
     {
-        //
+        $request->validate([
+            'kode_pesanan' => 'required'
+        ]);
+
+        $pesanan = Pesanan::where(
+            'kode_pesanan', strtoupper(trim($request->kode_pesanan))
+        )->first();
+
+        if (!$pesanan) {
+            return back()
+            ->withInput()
+            ->with('error', 'Kode pesanan tidak ditemukan.');
+        }
+
+        return view('pelanggan.cek-status', compact('pesanan'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Pelanggan  $pelanggan
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Pelanggan $pelanggan)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Pelanggan  $pelanggan
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Pelanggan $pelanggan)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Pelanggan  $pelanggan
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Pelanggan $pelanggan)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Pelanggan  $pelanggan
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Pelanggan $pelanggan)
-    {
-        //
-    }
 }

@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class AuthPegawaiController extends Controller
 {
-    public function showLoginForm()
+    public function showLogin()
     {
         return view('pegawai.login');
     }
