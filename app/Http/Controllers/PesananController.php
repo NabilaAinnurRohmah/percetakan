@@ -3,186 +3,278 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pesanan;
-use App\Models\Pelanggan;
 use Illuminate\Http\Request;
 
 class PesananController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    // Daftar layanan dan harga
+    private function daftarHarga()
+    {
+        return [
+            'fotokopi_bw' => [
+                'nama' => 'Fotokopi Hitam Putih',
+                'harga' => 500,
+            ],
+            'print_bw' => [
+                'nama' => 'Print Hitam Putih',
+                'harga' => 1000,
+            ],
+            'print_warna' => [
+                'nama' => 'Print Berwarna',
+                'harga' => 2000,
+            ],
+            'jilid_lakban' => [
+                'nama' => 'Jilid Lakban',
+                'harga' => 3000,
+            ],
+            'jilid_spiral' => [
+                'nama' => 'Jilid Spiral',
+                'harga' => 7000,
+            ],
+            'laminating' => [
+                'nama' => 'Laminating',
+                'harga' => 3000,
+            ],
+            'scan' => [
+                'nama' => 'Scan Dokumen',
+                'harga' => 1000,
+            ],
+        ];
+    }
+
+    // Memeriksa login pegawai
+    private function cekLogin()
     {
         if (!session('pegawai_login')) {
             return redirect()->route('pegawai.login');
         }
 
-        $pesanan = Pesanan::with('pelanggan')
-        ->orderBy('id_pesanan', 'desc')
-        ->get();
+        return null;
+    }
+
+    // Menampilkan semua pesanan
+    public function index()
+    {
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
+        }
+
+        $pesanan = Pesanan::with('detailLayanan')
+            ->orderBy('id_pesanan', 'desc')
+            ->get();
 
         return view('pesanan.index', compact('pesanan'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    // Menampilkan form tambah pesanan
     public function create()
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
-        $pelanggan = Pelanggan::orderBy('nama_pelanggan')->get();
+        $layanan = $this->daftarHarga();
 
-        return view('pesanan.create', compact('pelanggan'));
+        return view('pesanan.create', compact('layanan'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+    // Menyimpan pesanan baru
     public function store(Request $request)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
+
+        $layanan = $this->daftarHarga();
 
         $request->validate([
-            'id_pelanggan' => 'nullable|exists:pelanggan,id_pelanggan',
-            'nama_pesanan' => 'required|max:500',
+            'nama_pelanggan' => 'required|string|max:100',
+            'nama_pesanan' => 'required|string|max:500',
             'jenis_pesanan' => 'required|in:langsung,reguler',
-            'detail_pesanan' => 'nullable',
-            'total_harga' => 'required|numeric|min:0',
+            'detail_pesanan' => 'nullable|string',
+
+            'rincian' => 'required|array|min:1',
+            'rincian.*.jenis_layanan' => [
+                'required',
+                'in:' . implode(',', array_keys($layanan)),
+            ],
+            'rincian.*.jumlah' => 'required|integer|min:1',
         ]);
 
-        $status = 'menunggu_dikerjakan';
+        // Menentukan jenis pesanan
+        $langsung = $request->jenis_pesanan === 'langsung';
 
-        if ($request->jenis_pesanan === 'langsung') {
-            $status = 'selesai';
-        }
-
+        // Menyimpan data utama pesanan
         $pesanan = Pesanan::create([
-            'id_pelanggan' => $request->id_pelanggan,
+            'id_pelanggan' => null,
+            'nama_pelanggan' => $request->nama_pelanggan,
             'nama_pesanan' => $request->nama_pesanan,
             'jenis_pesanan' => $request->jenis_pesanan,
             'detail_pesanan' => $request->detail_pesanan,
-            'status' => $status,
-            'tanggal_selesai' =>
-                $request->jenis_pesanan === 'langsung'
-                ? now() : null,
-            'total_harga' => $request->total_harga,
+            'status' => $langsung
+                ? 'selesai'
+                : 'menunggu_dikerjakan',
+            'tanggal_selesai' => $langsung ? now() : null,
+            'total_harga' => 0,
         ]);
 
-        if ($request->jenis_pesanan === 'reguler') {
-            $pesanan->kode_pesanan = 'ORD-' . str_pad
-                ($pesanan->id_pesanan, 4, '0', STR_PAD_LEFT);
-            $pesanan->save();
+        // Menyimpan setiap layanan dan menghitung total
+        $total = 0;
+
+        foreach ($request->rincian as $item) {
+            $pilihan = $layanan[$item['jenis_layanan']];
+            $jumlah = (int) $item['jumlah'];
+            $harga = $pilihan['harga'];
+            $subtotal = $harga * $jumlah;
+
+            $pesanan->detailLayanan()->create([
+                'jenis_layanan' => $item['jenis_layanan'],
+                'jumlah' => $jumlah,
+                'harga_satuan' => $harga,
+                'subtotal' => $subtotal,
+            ]);
+
+            $total += $subtotal;
         }
 
-        return redirect()->route('pesanan.index')
-        ->with('success', 'Data berhasil disimpan.');
+        // Memperbarui total harga pesanan
+        $pesanan->total_harga = $total;
 
+        // Membuat kode otomatis untuk pesanan reguler
+        if (!$langsung) {
+            $pesanan->kode_pesanan = 'ORD-' . str_pad(
+                $pesanan->id_pesanan,
+                4,
+                '0',
+                STR_PAD_LEFT
+            );
+        }
+
+        $pesanan->save();
+
+        return redirect()
+            ->route('pesanan.index')
+            ->with('success', 'Pesanan berhasil disimpan.');
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Menampilkan detail pesanan
     public function show($id)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
-        $pesanan = Pesanan::with('pelanggan')->findOrFail($id);
+        $pesanan = Pesanan::with('detailLayanan')
+            ->findOrFail($id);
 
-        return view('pesanan.show', compact('pesanan'));
+        $layanan = $this->daftarHarga();
+
+        return view(
+            'pesanan.show',
+            compact('pesanan', 'layanan')
+        );
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Menampilkan form edit pesanan
     public function edit($id)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
-        $pesanan = Pesanan::findOrFail($id);
-        $pelanggan = Pelanggan::orderBy('nama_pelanggan')->get();
+        $pesanan = Pesanan::with('detailLayanan')
+            ->findOrFail($id);
 
-        return view('pesanan.edit', compact('pesanan', 'pelanggan'));
+        $layanan = $this->daftarHarga();
+
+        return view(
+            'pesanan.edit',
+            compact('pesanan', 'layanan')
+        );
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Memperbarui pesanan dan rincian layanan
     public function update(Request $request, $id)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
+        $layanan = $this->daftarHarga();
+
         $request->validate([
-            'id_pelanggan' => 'nullable|exists:pelanggan,id_pelanggan',
-            'nama_pesanan' => 'required|max:150',
-            'detail_pesanan' => 'nullable',
-            'total_harga' => 'required|numeric|min:0',
+            'nama_pelanggan' => 'required|string|max:100',
+            'nama_pesanan' => 'required|string|max:500',
+            'detail_pesanan' => 'nullable|string',
+
+            'rincian' => 'required|array|min:1',
+            'rincian.*.jenis_layanan' => [
+                'required',
+                'in:' . implode(',', array_keys($layanan)),
+            ],
+            'rincian.*.jumlah' => 'required|integer|min:1',
         ]);
 
         $pesanan = Pesanan::findOrFail($id);
 
-        $pesanan->update([
-            'id_pelanggan' => $request->id_pelanggan,
-            'nama_pesanan' => $request->nama_pesanan,
-            'detail_pesanan' => $request->detail_pesanan,
-            'total_harga' => $request->total_harga,
-        ]);
+        // Memperbarui informasi utama
+        $pesanan->nama_pelanggan = $request->nama_pelanggan;
+        $pesanan->nama_pesanan = $request->nama_pesanan;
+        $pesanan->detail_pesanan = $request->detail_pesanan;
 
-        return redirect()->route('pesanan.index')
-            ->with('success', 'Data berhasil diperbarui.');
+        $pesanan->save();
 
+        // Menghapus rincian lama
+        $pesanan->detailLayanan()->delete();
+
+        // Menyimpan rincian terbaru
+        $total = 0;
+
+        foreach ($request->rincian as $item) {
+            $pilihan = $layanan[$item['jenis_layanan']];
+            $jumlah = (int) $item['jumlah'];
+            $harga = $pilihan['harga'];
+            $subtotal = $harga * $jumlah;
+
+            $pesanan->detailLayanan()->create([
+                'jenis_layanan' => $item['jenis_layanan'],
+                'jumlah' => $jumlah,
+                'harga_satuan' => $harga,
+                'subtotal' => $subtotal,
+            ]);
+
+            $total += $subtotal;
+        }
+
+        // Memperbarui total
+        $pesanan->total_harga = $total;
+        $pesanan->save();
+
+        return redirect()
+            ->route('pesanan.index')
+            ->with('success', 'Pesanan berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Menghapus pesanan
     public function destroy($id)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
         $pesanan = Pesanan::findOrFail($id);
         $pesanan->delete();
 
-        return redirect()->route('pesanan.index')
-            ->with('success', 'Data berhasil dihapus.');
+        return redirect()
+            ->route('pesanan.index')
+            ->with('success', 'Pesanan berhasil dihapus.');
     }
 
+    // Memperbarui status pesanan
     public function updateStatus(Request $request, $id)
     {
-        if (!session('pegawai_login')) {
-            return redirect()->route('pegawai.login');
+        if ($redirect = $this->cekLogin()) {
+            return $redirect;
         }
 
         $request->validate([
@@ -190,6 +282,7 @@ class PesananController extends Controller
         ]);
 
         $pesanan = Pesanan::findOrFail($id);
+
         $pesanan->status = $request->status;
 
         if ($request->status === 'selesai') {
@@ -200,7 +293,8 @@ class PesananController extends Controller
 
         $pesanan->save();
 
-        return redirect()->route('pesanan.show', $pesanan->id_pesanan)
+        return redirect()
+            ->route('pesanan.show', $pesanan->id_pesanan)
             ->with('success', 'Status pesanan berhasil diperbarui.');
     }
 }

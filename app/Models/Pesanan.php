@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Pesanan extends Model
 {
     protected $table = 'pesanan';
+
     protected $primaryKey = 'id_pesanan';
+
     protected $fillable = [
-        'kode_pelanggan',
+        'kode_pesanan',
         'id_pelanggan',
+        'nama_pelanggan',
         'nama_pesanan',
         'jenis_pesanan',
         'detail_pesanan',
@@ -21,8 +23,13 @@ class Pesanan extends Model
         'total_harga',
     ];
 
-    public function pelanggan()
+    public function detailLayanan()
     {
-        return $this->belongsTo(Pelanggan::class, 'id_pelanggan', 'id_pelanggan');
+        return $this->hasMany(
+            DetailPesanan::class,
+            'id_pesanan',
+            'id_pesanan'
+        );
     }
+
 }
