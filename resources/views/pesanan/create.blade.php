@@ -3,18 +3,29 @@
 @section('title', 'Tambah Pesanan')
 
 @section('content')
-    <nav>
+    <nav class="order-nav">
         <strong>Website Pegawai - Percetakan</strong>
-        <a href="{{ route('pesanan.index') }}">Kembali</a>
+        <a href="{{ route('pesanan.index') }}">Kembali ke Data Pesanan</a>
     </nav>
 
-    <div class="container">
-        <div class="card">
-            <h2>Tambah Data Pesanan</h2>
+    <div class="create-container">
+        <div class="create-card">
+
+            <div class="create-header">
+                <div>
+                    <h2>Tambah Data Pesanan</h2>
+                    <p>Masukkan informasi pelanggan dan rincian layanan pesanan.</p>
+                </div>
+
+                <a href="{{ route('pesanan.index') }}" class="btn btn-detail">
+                    Kembali
+                </a>
+            </div>
 
             @if ($errors->any())
-                <div class="alert error">
-                    <ul>
+                <div class="order-alert alert-error">
+                    <strong>Periksa kembali data berikut:</strong>
+                    <ul class="create-error-list">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -22,41 +33,61 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('pesanan.store') }}">
+            <form class="create-form" method="POST" action="{{ route('pesanan.store') }}">
                 @csrf
 
-                <label>Nama Pelanggan</label>
-                <input type="text" name="nama_pelanggan" value="{{ old('nama_pelanggan') }}" maxlength="100" required>
+                <label for="nama_pelanggan">Nama Pelanggan</label>
+                <input type="text" id="nama_pelanggan" name="nama_pelanggan" value="{{ old('nama_pelanggan') }}"
+                    maxlength="100" placeholder="Masukkan nama pelanggan" required>
 
-                <label>Nama Pesanan</label>
-                <input type="text" name="nama_pesanan" value="{{ old('nama_pesanan') }}"
+                <label for="nama_pesanan">Nama Pesanan</label>
+                <input type="text" id="nama_pesanan" name="nama_pesanan" value="{{ old('nama_pesanan') }}"
                     placeholder="Contoh: Dokumen kuliah" maxlength="500" required>
 
-                <label>Jenis Pesanan</label>
-                <select name="jenis_pesanan" required>
-                    <option value="">-- Pilih Jenis --</option>
+                <label for="jenis_pesanan">Jenis Pesanan</label>
+                <select id="jenis_pesanan" name="jenis_pesanan" required>
+                    <option value="">-- Pilih Jenis Pesanan --</option>
+
                     <option value="langsung" {{ old('jenis_pesanan') == 'langsung' ? 'selected' : '' }}>
                         Pesanan Langsung
                     </option>
+
                     <option value="reguler" {{ old('jenis_pesanan') == 'reguler' ? 'selected' : '' }}>
                         Pesanan Reguler
                     </option>
                 </select>
 
-                <h3>Rincian Layanan</h3>
+                <h3 class="create-section-title">Rincian Layanan</h3>
+                <p class="create-section-description">
+                    Pilih jenis layanan dan masukkan jumlahnya. Harga satuan,
+                    subtotal, dan total akan dihitung secara otomatis.
+                </p>
 
                 <div id="daftar-rincian"></div>
 
-                <button type="button" id="tambah-layanan">
-                    + Tambah Layanan
-                </button>
+                <div class="create-actions">
+                    <button type="button" id="tambah-layanan" class="btn btn-add-service">
+                        + Tambah Layanan
+                    </button>
+                </div>
 
-                <h3>Total: <span id="total-harga">Rp0</span></h3>
+                <div class="create-total">
+                    <span>Total Pembayaran</span>
+                    <strong id="total-harga">Rp0</strong>
+                </div>
 
-                <label>Catatan Pesanan (opsional)</label>
-                <textarea name="detail_pesanan" rows="3">{{ old('detail_pesanan') }}</textarea>
+                <label for="detail_pesanan">Catatan Pesanan (Opsional)</label>
+                <textarea id="detail_pesanan" name="detail_pesanan" rows="3" placeholder="Tambahkan catatan jika diperlukan...">{{ old('detail_pesanan') }}</textarea>
 
-                <button type="submit">Simpan Pesanan</button>
+                <div class="create-actions">
+                    <button type="submit" class="btn btn-save-create">
+                        Simpan Pesanan
+                    </button>
+
+                    <a href="{{ route('pesanan.index') }}" class="btn btn-cancel-create">
+                        Batal
+                    </a>
+                </div>
             </form>
         </div>
     </div>
@@ -75,8 +106,6 @@
             const kotak = document.createElement('div');
 
             kotak.className = 'rincian-item';
-            kotak.style.cssText =
-                'border:1px solid #ddd;padding:15px;margin:12px 0;border-radius:8px';
 
             const label = document.createElement('label');
             label.textContent = 'Jenis Layanan';
@@ -110,11 +139,15 @@
             inputJumlah.required = true;
 
             const harga = document.createElement('p');
+            harga.className = 'rincian-harga';
+
             const subtotal = document.createElement('p');
+            subtotal.className = 'rincian-subtotal';
 
             const tombolHapus = document.createElement('button');
             tombolHapus.type = 'button';
             tombolHapus.textContent = 'Hapus Layanan';
+            tombolHapus.className = 'btn btn-remove-service';
 
             function hitung() {
                 const item = daftarHarga[select.value];
@@ -124,8 +157,8 @@
 
                 harga.textContent = 'Harga satuan: ' + rupiah(hargaSatuan);
                 subtotal.textContent = 'Subtotal: ' + rupiah(nilaiSubtotal);
-                kotak.dataset.subtotal = nilaiSubtotal;
 
+                kotak.dataset.subtotal = nilaiSubtotal;
                 hitungTotal();
             }
 
@@ -138,9 +171,13 @@
             });
 
             kotak.append(
-                label, select,
-                labelJumlah, inputJumlah,
-                harga, subtotal, tombolHapus
+                label,
+                select,
+                labelJumlah,
+                inputJumlah,
+                harga,
+                subtotal,
+                tombolHapus
             );
 
             daftarRincian.appendChild(kotak);
@@ -157,11 +194,16 @@
             document.getElementById('total-harga').textContent = rupiah(total);
         }
 
-        document.getElementById('tambah-layanan')
-            .addEventListener('click', () => buatRincian());
+        document.getElementById('tambah-layanan').addEventListener('click', () => {
+            buatRincian();
+        });
 
         @php
             $rincianLama = old('rincian', [['jenis_layanan' => '', 'jumlah' => 1]]);
+
+            if (empty($rincianLama)) {
+                $rincianLama = [['jenis_layanan' => '', 'jumlah' => 1]];
+            }
         @endphp
 
         const rincianLama = @json($rincianLama);

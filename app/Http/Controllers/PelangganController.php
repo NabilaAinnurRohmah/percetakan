@@ -2,40 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pelanggan;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
 
 class PelangganController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    // Menampilkan halaman cek status
     public function index()
     {
         return view('pelanggan.cek-status');
     }
 
-
+    // Memeriksa kode pesanan
     public function cek(Request $request)
     {
         $request->validate([
-            'kode_pesanan' => 'required'
+            'kode_pesanan' => 'required|string',
         ]);
 
-        $pesanan = Pesanan::where(
-            'kode_pesanan', strtoupper(trim($request->kode_pesanan))
-        )->first();
+        $kode = strtoupper(trim($request->kode_pesanan));
+
+        $pesanan = Pesanan::with('detailLayanan')
+            ->where('kode_pesanan', $kode)
+            ->where('jenis_pesanan', 'reguler')
+            ->first();
 
         if (!$pesanan) {
             return back()
-            ->withInput()
-            ->with('error', 'Kode pesanan tidak ditemukan.');
+                ->withInput()
+                ->with('error', 'Kode pesanan tidak ditemukan.');
         }
 
-        return view('pelanggan.cek-status', compact('pesanan'));
-    }
+        $layanan = [
+            'fotokopi_bw' => ['nama' => 'Fotokopi Hitam Putih'],
+            'print_bw' => ['nama' => 'Print Hitam Putih'],
+            'print_warna' => ['nama' => 'Print Berwarna'],
+            'jilid_lakban' => ['nama' => 'Jilid Lakban'],
+            'jilid_spiral' => ['nama' => 'Jilid Spiral'],
+            'laminating' => ['nama' => 'Laminating'],
+            'scan' => ['nama' => 'Scan Dokumen'],
+        ];
 
+        return view(
+            'pelanggan.cek-status',
+            compact('pesanan', 'layanan')
+        );
+    }
 }

@@ -3,47 +3,60 @@
 @section('title', 'Login Pegawai')
 
 @section('content')
+    <div class="login-page">
+        <div class="login-card">
 
-    <div class="container">
-
-        <div class="card" style="max-width: 450px; margin: 80px auto;">
-
-            <h2>Login Pegawai</h2>
+            <div class="login-header">
+                <div class="login-logo">P</div>
+                <h2>Login Pegawai</h2>
+                <p>
+                    Silakan masuk menggunakan akun pegawai
+                    untuk mengelola pesanan percetakan.
+                </p>
+            </div>
 
             @if (session('error'))
-                <div class="alert error">
+                <div class="login-alert">
                     {{ session('error') }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('pegawai.login.proses') }}">
+            @if ($errors->any())
+                <div class="login-alert">
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
 
+            <form class="login-form" method="POST" action="{{ route('pegawai.login.proses') }}">
                 @csrf
 
-                <label>Username</label>
-
-                <input type="text" name="username" value="{{ old('username') }}">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ old('username') }}"
+                    placeholder="Masukkan username" autocomplete="username" required autofocus>
 
                 @error('username')
-                    <small>{{ $message }}</small>
+                    <div class="login-error">{{ $message }}</div>
                 @enderror
 
-                <label>Password</label>
-
-                <input type="password" name="password">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Masukkan password"
+                    autocomplete="current-password" required>
 
                 @error('password')
-                    <small>{{ $message }}</small>
+                    <div class="login-error">{{ $message }}</div>
                 @enderror
 
-                <button type="submit">
+                <button type="submit" class="login-button">
                     Login
                 </button>
-
             </form>
 
+            <div class="login-footer">
+                Sistem Informasi Pesanan Percetakan
+            </div>
+
         </div>
-
     </div>
-
 @endsection

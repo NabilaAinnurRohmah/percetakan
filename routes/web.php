@@ -52,6 +52,9 @@ Route::delete('/pegawai/pesanan/{id}', [
 Route::put('/pegawai/pesanan/{id}/status', [
     PesananController::class, 'updateStatus'
 ])->name('pesanan.status');
+Route::get('/pegawai/riwayat-pesanan', [
+    PesananController::class, 'riwayat'
+])->name('pesanan.riwayat');
 
 
 Route::get('/cek-status', [

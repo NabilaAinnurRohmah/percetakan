@@ -63,7 +63,9 @@ class PesananController extends Controller
             ->orderBy('id_pesanan', 'desc')
             ->get();
 
-        return view('pesanan.index', compact('pesanan'));
+        $gunakanSidebar = true;
+
+        return view('pesanan.index', compact('pesanan', 'gunakanSidebar'));
     }
 
     // Menampilkan form tambah pesanan
@@ -75,7 +77,9 @@ class PesananController extends Controller
 
         $layanan = $this->daftarHarga();
 
-        return view('pesanan.create', compact('layanan'));
+        $gunakanSidebar = true;
+
+        return view('pesanan.create', compact('layanan', 'gunakanSidebar'));
     }
 
     // Menyimpan pesanan baru
@@ -169,9 +173,11 @@ class PesananController extends Controller
 
         $layanan = $this->daftarHarga();
 
+        $gunakanSidebar = true;
+
         return view(
             'pesanan.show',
-            compact('pesanan', 'layanan')
+            compact('pesanan', 'layanan', 'gunakanSidebar')
         );
     }
 
@@ -187,9 +193,11 @@ class PesananController extends Controller
 
         $layanan = $this->daftarHarga();
 
+        $gunakanSidebar = true;
+
         return view(
             'pesanan.edit',
-            compact('pesanan', 'layanan')
+            compact('pesanan', 'layanan', 'gunakanSidebar')
         );
     }
 
@@ -272,29 +280,71 @@ class PesananController extends Controller
 
     // Memperbarui status pesanan
     public function updateStatus(Request $request, $id)
-    {
-        if ($redirect = $this->cekLogin()) {
-            return $redirect;
-        }
-
-        $request->validate([
-            'status' => 'required|in:menunggu_dikerjakan,sedang_dikerjakan,selesai',
-        ]);
-
-        $pesanan = Pesanan::findOrFail($id);
-
-        $pesanan->status = $request->status;
-
-        if ($request->status === 'selesai') {
-            $pesanan->tanggal_selesai = now();
-        } else {
-            $pesanan->tanggal_selesai = null;
-        }
-
-        $pesanan->save();
-
-        return redirect()
-            ->route('pesanan.show', $pesanan->id_pesanan)
-            ->with('success', 'Status pesanan berhasil diperbarui.');
+{
+    if ($redirect = $this->cekLogin()) {
+        return $redirect;
     }
+
+    $request->validate([
+        'status' => 'required|in:sedang_dikerjakan,selesai',
+    ]);
+
+    $pesanan = Pesanan::findOrFail($id);
+
+    // Pesanan langsung tidak menggunakan alur status bertahap.
+    if ($pesanan->jenis_pesanan !== 'reguler') {
+        return redirect()
+            ->route('pesanan.index')
+            ->with('success', 'Pesanan ini tidak memerlukan perubahan status.');
+    }
+
+    // Harus dimulai dari menunggu dikerjakan.
+    if (
+        $pesanan->status === 'menunggu_dikerjakan'
+        && $request->status === 'sedang_dikerjakan'
+    ) {
+        $pesanan->status = 'sedang_dikerjakan';
+        $pesanan->tanggal_selesai = null;
+    }
+
+    // Hanya pesanan yang sedang dikerjakan yang dapat diselesaikan.
+    elseif (
+        $pesanan->status === 'sedang_dikerjakan'
+        && $request->status === 'selesai'
+    ) {
+        $pesanan->status = 'selesai';
+        $pesanan->tanggal_selesai = now();
+    }
+
+    else {
+        return redirect()
+            ->route('pesanan.index')
+            ->with('success', 'Status pesanan tidak dapat diubah ke tahap tersebut.');
+    }
+
+    $pesanan->save();
+
+    return redirect()
+        ->route('pesanan.index')
+        ->with('success', 'Status pesanan berhasil diperbarui.');
+}
+
+
+public function riwayat()
+{
+    if ($redirect = $this->cekLogin()) {
+        return $redirect;
+    }
+
+    $pesanan = Pesanan::with('detailLayanan')
+        ->where('status', 'selesai')
+        ->orderBy('tanggal_selesai', 'desc')
+        ->orderBy('id_pesanan', 'desc')
+        ->get();
+
+    $gunakanSidebar = true;
+
+    return view('pesanan.riwayat', compact('pesanan', 'gunakanSidebar'));
+}
+
 }

@@ -3,104 +3,125 @@
 @section('title', 'Detail Pesanan')
 
 @section('content')
-    <nav>
+    <nav class="order-nav">
         <strong>Website Pegawai - Percetakan</strong>
-        <a href="{{ route('pesanan.index') }}">Kembali</a>
+
+        <a href="{{ route('pesanan.index') }}">Kembali ke Data Pesanan</a>
     </nav>
 
-    <div class="container">
-        <div class="card">
-            <h2>Detail Pesanan</h2>
+    <div class="detail-container">
+        <div class="detail-card">
+
+            <div class="detail-header">
+                <div>
+                    <h2>Detail Pesanan</h2>
+                    <p>Informasi lengkap pesanan dan rincian biaya layanan.</p>
+                </div>
+
+                <a href="{{ route('pesanan.index') }}" class="btn btn-detail">
+                    Kembali
+                </a>
+            </div>
 
             @if (session('success'))
-                <p class="alert">{{ session('success') }}</p>
+                <div class="order-alert alert-success">
+                    {{ session('success') }}
+                </div>
             @endif
 
-            <p><strong>Kode Pesanan:</strong>
-                {{ $pesanan->kode_pesanan ?? '-' }}</p>
+            <div class="detail-info">
+                <div class="detail-info-item">
+                    <strong>Kode Pesanan</strong>
+                    <span>{{ $pesanan->kode_pesanan ?? '-' }}</span>
+                </div>
 
-            <p><strong>Nama Pelanggan:</strong>
-                {{ $pesanan->nama_pelanggan }}</p>
+                <div class="detail-info-item">
+                    <strong>Nama Pelanggan</strong>
+                    <span>{{ $pesanan->nama_pelanggan ?? '-' }}</span>
+                </div>
 
-            <p><strong>Nama Pesanan:</strong>
-                {{ $pesanan->nama_pesanan }}</p>
+                <div class="detail-info-item">
+                    <strong>Nama Pesanan</strong>
+                    <span>{{ $pesanan->nama_pesanan }}</span>
+                </div>
 
-            <p><strong>Jenis Pesanan:</strong>
-                {{ ucfirst($pesanan->jenis_pesanan) }}</p>
+                <div class="detail-info-item">
+                    <strong>Jenis Pesanan</strong>
+                    <span>{{ ucfirst($pesanan->jenis_pesanan) }}</span>
+                </div>
 
-            <p><strong>Status:</strong>
-                {{ ucwords(str_replace('_', ' ', $pesanan->status)) }}</p>
+                <div class="detail-info-item">
+                    <strong>Status Pesanan</strong>
+                    <span>
+                        {{ ucwords(str_replace('_', ' ', $pesanan->status)) }}
+                    </span>
+                </div>
 
-            <h3>Rincian Layanan</h3>
+                <div class="detail-info-item">
+                    <strong>Tanggal Pesanan</strong>
+                    <span>
+                        {{ $pesanan->tanggal_pesanan ? \Carbon\Carbon::parse($pesanan->tanggal_pesanan)->format('d-m-Y H:i') : '-' }}
+                    </span>
+                </div>
+            </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Layanan</th>
-                        <th>Jumlah</th>
-                        <th>Harga Satuan</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($pesanan->detailLayanan as $item)
+            <h3 class="detail-section-title">Rincian Layanan</h3>
+
+            <div class="detail-table-wrapper">
+                <table class="detail-table">
+                    <thead>
                         <tr>
-                            <td>
-                                {{ $layanan[$item->jenis_layanan]['nama'] ?? $item->jenis_layanan }}
-                            </td>
-                            <td>{{ $item->jumlah }}</td>
-                            <td>
-                                Rp{{ number_format($item->harga_satuan, 0, ',', '.') }}
-                            </td>
-                            <td>
-                                Rp{{ number_format($item->subtotal, 0, ',', '.') }}
-                            </td>
+                            <th>Layanan</th>
+                            <th class="text-center">Jumlah</th>
+                            <th class="text-right">Harga Satuan</th>
+                            <th class="text-right">Subtotal</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
 
-            <h3>
-                Total Pembayaran:
-                Rp{{ number_format($pesanan->total_harga, 0, ',', '.') }}
-            </h3>
+                    <tbody>
+                        @forelse ($pesanan->detailLayanan as $item)
+                            <tr>
+                                <td>
+                                    {{ $layanan[$item->jenis_layanan]['nama'] ?? $item->jenis_layanan }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ $item->jumlah }}
+                                </td>
+
+                                <td class="text-right">
+                                    Rp{{ number_format($item->harga_satuan, 0, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    Rp{{ number_format($item->subtotal, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="detail-empty">
+                                    Belum ada rincian layanan.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="detail-total">
+                <span>Total Pembayaran</span>
+                <strong>
+                    Rp{{ number_format($pesanan->total_harga, 0, ',', '.') }}
+                </strong>
+            </div>
 
             @if ($pesanan->detail_pesanan)
-                <p><strong>Catatan:</strong> {{ $pesanan->detail_pesanan }}</p>
+                <div class="detail-note">
+                    <strong>Catatan Pesanan</strong>
+                    <div>{{ $pesanan->detail_pesanan }}</div>
+                </div>
             @endif
 
-            <hr>
-
-            <h3>Perbarui Status</h3>
-
-            <form method="POST" action="{{ route('pesanan.status', $pesanan->id_pesanan) }}">
-                @csrf
-                @method('PUT')
-
-                <label>Status Pesanan</label>
-
-                <select name="status" required>
-                    <option value="menunggu_dikerjakan" {{ $pesanan->status == 'menunggu_dikerjakan' ? 'selected' : '' }}>
-                        Menunggu Dikerjakan
-                    </option>
-
-                    <option value="sedang_dikerjakan" {{ $pesanan->status == 'sedang_dikerjakan' ? 'selected' : '' }}>
-                        Sedang Dikerjakan
-                    </option>
-
-                    <option value="selesai" {{ $pesanan->status == 'selesai' ? 'selected' : '' }}>
-                        Selesai
-                    </option>
-                </select>
-
-                <button type="submit">Simpan Status</button>
-            </form>
-
-            <p>
-                <a href="{{ route('pesanan.edit', $pesanan->id_pesanan) }}">
-                    Edit Pesanan
-                </a>
-            </p>
         </div>
     </div>
 @endsection

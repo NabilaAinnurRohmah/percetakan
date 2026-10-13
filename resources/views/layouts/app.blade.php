@@ -3,125 +3,70 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 
-    <title>
-        @yield('title', 'Sistem Percetakan')
-    </title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f6f8;
-            color: #222;
-        }
-
-        nav {
-            background: #1f6f5b;
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin-left: 15px;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
-            margin-bottom: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-
-        th {
-            background: #f0f0f0;
-        }
-
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 6px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        button,
-        .btn {
-            border: none;
-            padding: 9px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            background: #1f6f5b;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #c0392b;
-        }
-
-        .btn-warning {
-            background: #d68910;
-        }
-
-        .btn-secondary {
-            background: #777;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            background: #e8f5e9;
-        }
-
-        .error {
-            background: #fdecea;
-        }
-
-        .status {
-            font-weight: bold;
-        }
-    </style>
+    <title>@yield('title', 'Sistem Percetakan')</title>
 </head>
 
 <body>
 
-    @yield('content')
+    @if (isset($gunakanSidebar) && $gunakanSidebar === true && session('pegawai_login'))
+        <div class="app-layout">
+
+            <aside class="app-sidebar">
+                <div class="sidebar-brand">
+                    <div class="sidebar-logo">P</div>
+                    <div>
+                        <h2>Percetakan</h2>
+                        <p>Sistem Pengelolaan</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-menu-title">MENU UTAMA</div>
+
+                <nav class="sidebar-menu">
+                    <a href="{{ route('pesanan.index') }}"
+                        class="{{ request()->routeIs('pesanan.index', 'pesanan.create', 'pesanan.show', 'pesanan.edit') ? 'active' : '' }}">
+                        <span class="sidebar-icon">▤</span>
+                        <span>Data Pesanan</span>
+                    </a>
+
+                    <a href="{{ route('pesanan.riwayat') }}"
+                        class="{{ request()->routeIs('pesanan.riwayat') ? 'active' : '' }}">
+                        <span class="sidebar-icon">◷</span>
+                        <span>Riwayat Pesanan</span>
+                    </a>
+                </nav>
+
+                <div class="sidebar-bottom">
+                    <div class="sidebar-user">
+                        <div class="sidebar-user-avatar">P</div>
+                        <div>
+                            <strong>Pegawai</strong>
+                            <span>Sudah login</span>
+                        </div>
+                    </div>
+
+                    <form method="GET" action="{{ route('pegawai.logout') }}">
+                        @csrf
+                        <button type="submit" class="sidebar-logout">
+                            Keluar
+                        </button>
+                    </form>
+                </div>
+            </aside>
+
+            <main class="app-main">
+                @yield('content')
+            </main>
+
+        </div>
+    @else
+        <main class="public-main">
+            @yield('content')
+        </main>
+    @endif
 
 </body>
 
