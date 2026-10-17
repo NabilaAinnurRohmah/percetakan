@@ -12,5 +12,10 @@ class Pegawai extends Model
     protected $fillable = [
         'username',
         'password',
+        'peran',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 }

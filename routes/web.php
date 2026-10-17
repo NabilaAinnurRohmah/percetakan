@@ -56,6 +56,9 @@ Route::get('/pegawai/riwayat-pesanan', [
     PesananController::class, 'riwayat'
 ])->name('pesanan.riwayat');
 
+Route::get('/', [
+    PelangganController::class, 'index'
+])->name('beranda');
 
 Route::get('/cek-status', [
     PelangganController::class, 'index'
