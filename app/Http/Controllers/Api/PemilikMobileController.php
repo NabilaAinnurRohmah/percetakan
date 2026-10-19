@@ -51,7 +51,7 @@ class PemilikMobileController extends Controller
         ->orderBy('id_pesanan', 'desc')
         ->get();
 
-        return response()->json([$pesanan]);
+        return response()->json($pesanan);
     }
 
     public function detailPesanan($id)
@@ -64,7 +64,7 @@ class PemilikMobileController extends Controller
             return response()->json(['message' => 'Pesanan tidak ditemukan'], 404);
         }
 
-        return response()->json([$pesanan]);
+        return response()->json($pesanan);
     }
 
 }
