@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class PesananController extends Controller
 {
-    // Daftar layanan dan harga
     private function daftarHarga()
     {
         return [
@@ -42,7 +41,6 @@ class PesananController extends Controller
         ];
     }
 
-    // Memeriksa login pegawai
     private function cekLogin()
     {
         if (!session('pegawai_login')) {
@@ -52,7 +50,6 @@ class PesananController extends Controller
         return null;
     }
 
-    // Menampilkan semua pesanan
     public function index()
     {
         if ($redirect = $this->cekLogin()) {
@@ -68,7 +65,6 @@ class PesananController extends Controller
         return view('pesanan.index', compact('pesanan', 'gunakanSidebar'));
     }
 
-    // Menampilkan form tambah pesanan
     public function create()
     {
         if ($redirect = $this->cekLogin()) {
@@ -82,7 +78,6 @@ class PesananController extends Controller
         return view('pesanan.create', compact('layanan', 'gunakanSidebar'));
     }
 
-    // Menyimpan pesanan baru
     public function store(Request $request)
     {
         if ($redirect = $this->cekLogin()) {
@@ -105,10 +100,8 @@ class PesananController extends Controller
             'rincian.*.jumlah' => 'required|integer|min:1',
         ]);
 
-        // Menentukan jenis pesanan
         $langsung = $request->jenis_pesanan === 'langsung';
 
-        // Menyimpan data utama pesanan
         $pesanan = Pesanan::create([
             'id_pelanggan' => null,
             'nama_pelanggan' => $request->nama_pelanggan,
@@ -122,7 +115,6 @@ class PesananController extends Controller
             'total_harga' => 0,
         ]);
 
-        // Menyimpan setiap layanan dan menghitung total
         $total = 0;
 
         foreach ($request->rincian as $item) {
@@ -141,10 +133,8 @@ class PesananController extends Controller
             $total += $subtotal;
         }
 
-        // Memperbarui total harga pesanan
         $pesanan->total_harga = $total;
 
-        // Membuat kode otomatis untuk pesanan reguler
         if (!$langsung) {
             $pesanan->kode_pesanan = 'ORD-' . str_pad(
                 $pesanan->id_pesanan,
@@ -161,7 +151,6 @@ class PesananController extends Controller
             ->with('success', 'Pesanan berhasil disimpan.');
     }
 
-    // Menampilkan detail pesanan
     public function show($id)
     {
         if ($redirect = $this->cekLogin()) {
@@ -181,7 +170,6 @@ class PesananController extends Controller
         );
     }
 
-    // Menampilkan form edit pesanan
     public function edit($id)
     {
         if ($redirect = $this->cekLogin()) {
@@ -201,7 +189,6 @@ class PesananController extends Controller
         );
     }
 
-    // Memperbarui pesanan dan rincian layanan
     public function update(Request $request, $id)
     {
         if ($redirect = $this->cekLogin()) {
@@ -225,17 +212,14 @@ class PesananController extends Controller
 
         $pesanan = Pesanan::findOrFail($id);
 
-        // Memperbarui informasi utama
         $pesanan->nama_pelanggan = $request->nama_pelanggan;
         $pesanan->nama_pesanan = $request->nama_pesanan;
         $pesanan->detail_pesanan = $request->detail_pesanan;
 
         $pesanan->save();
 
-        // Menghapus rincian lama
         $pesanan->detailLayanan()->delete();
 
-        // Menyimpan rincian terbaru
         $total = 0;
 
         foreach ($request->rincian as $item) {
@@ -254,7 +238,6 @@ class PesananController extends Controller
             $total += $subtotal;
         }
 
-        // Memperbarui total
         $pesanan->total_harga = $total;
         $pesanan->save();
 
@@ -263,7 +246,6 @@ class PesananController extends Controller
             ->with('success', 'Pesanan berhasil diperbarui.');
     }
 
-    // Menghapus pesanan
     public function destroy($id)
     {
         if ($redirect = $this->cekLogin()) {
@@ -278,7 +260,6 @@ class PesananController extends Controller
             ->with('success', 'Pesanan berhasil dihapus.');
     }
 
-    // Memperbarui status pesanan
     public function updateStatus(Request $request, $id)
 {
     if ($redirect = $this->cekLogin()) {
@@ -291,14 +272,12 @@ class PesananController extends Controller
 
     $pesanan = Pesanan::findOrFail($id);
 
-    // Pesanan langsung tidak menggunakan alur status bertahap.
     if ($pesanan->jenis_pesanan !== 'reguler') {
         return redirect()
             ->route('pesanan.index')
             ->with('success', 'Pesanan ini tidak memerlukan perubahan status.');
     }
 
-    // Harus dimulai dari menunggu dikerjakan.
     if (
         $pesanan->status === 'menunggu_dikerjakan'
         && $request->status === 'sedang_dikerjakan'
@@ -307,7 +286,6 @@ class PesananController extends Controller
         $pesanan->tanggal_selesai = null;
     }
 
-    // Hanya pesanan yang sedang dikerjakan yang dapat diselesaikan.
     elseif (
         $pesanan->status === 'sedang_dikerjakan'
         && $request->status === 'selesai'

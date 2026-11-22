@@ -5,7 +5,6 @@
 @section('content')
     <div class="status-page">
 
-        {{-- Form pencarian pesanan --}}
         <div class="status-card">
             <div class="status-header">
                 <h2>Cek Status Pesanan</h2>
@@ -42,7 +41,6 @@
             </form>
         </div>
 
-        {{-- Hasil pencarian --}}
         @isset($pesanan)
             <div class="status-card">
 
