@@ -8,9 +8,9 @@
 
             <div class="login-header">
                 <div class="login-logo">P</div>
-                <h2>Login Pegawai dan Pemilik</h2>
+                <h2>Login Pegawai</h2>
                 <p>
-                    Silakan masuk menggunakan akun pegawai atau pemilik
+                    Silakan masuk menggunakan akun pegawai
                     untuk mengelola pesanan percetakan.
                 </p>
             </div>

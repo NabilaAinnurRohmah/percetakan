@@ -36,4 +36,10 @@ Route::middleware([PemilikMobileMiddleware::class])
     Route::get('/pesanan/{id}', [
         PemilikMobileController::class, 'detailPesanan'
     ]);
+    Route::get('/laporan', [
+        PemilikMobileController::class, 'laporan'
+    ]);
+    Route::get('/laporan/unduh', [
+        PemilikMobileController::class, 'unduhLaporan'
+    ]);
 });
